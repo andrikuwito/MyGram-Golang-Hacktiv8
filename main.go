@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	"fmt"
 	"mygram-golang/conf"
 	"mygram-golang/controller"
 	"mygram-golang/middleware"
@@ -15,7 +15,7 @@ import (
 func main() {
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		fmt.Println("Error loading .env file")
 	}
 
 	db := conf.InitDB()
@@ -24,17 +24,21 @@ func main() {
 	userService := service.NewUserService(userRepository)
 	userController := controller.NewUserController(userService)
 
+	commentRepository := repository.NewCommentRepository(db)
+	commentService := service.NewCommentService(commentRepository)
+
 	photoRepository := repository.NewPhotoRepository(db)
 	photoService := service.NewPhotoService(photoRepository)
-	photoController := controller.NewPhotoController(photoService, userService)
+	photoController := controller.NewPhotoController(photoService, commentService, userService)
+	commentController := controller.NewCommentController(commentService, photoService)
 
 	socialmediaRepository := repository.NewSocialMediaRepository(db)
 	socialmediaService := service.NewSocialMediaService(socialmediaRepository)
 	socialmediaController := controller.NewSocialMediaController(socialmediaService, userService)
 
-	commentRepository := repository.NewCommentRepository(db)
-	commentService := service.NewCommentService(commentRepository)
-	commentController := controller.NewCommentController(commentService, photoService)
+	// commentRepository := repository.NewCommentRepository(db)
+	// commentService := service.NewCommentService(commentRepository)
+	// commentController := controller.NewCommentController(commentService, photoService)
 
 	router := gin.Default()
 
@@ -63,15 +67,7 @@ func main() {
 	router.PUT("/socialmedias/:id", middleware.AuthMiddleware(), socialmediaController.UpdateSocialMedia)
 	router.DELETE("/socialmedias/:id", middleware.AuthMiddleware(), socialmediaController.DeleteSocialmedia)
 
-	router.POST("/user/test", middleware.AuthMiddleware(), userController.TestUser)
-
-	// data := input.UpdatePhoto{
-	// 	Title:    "title 1",
-	// 	Caption:  "Title 1 adalah",
-	// 	PhotoURL: "https;//facebook.com",
-	// }
-
-	// photoService.UpdatePhoto(8, data)
+	// router.Run(":" + os.Getenv("PORT"))
 
 	router.Run()
 }
